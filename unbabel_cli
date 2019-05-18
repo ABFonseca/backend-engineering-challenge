@@ -23,7 +23,6 @@ def read_json(filename):
 		return data
 	except:
 		print ("ERROR: specified input file not found or no permission to read")
-		parser.print_help()
 		exit(1)
 
 #Calculate the average of the duration of items with timestamp from time-window (in minutes) to time
@@ -103,6 +102,10 @@ Checks if all parameters are filled in and have the correct data type
 	except:
 		print ("ERROR: specified window size is not an integer number")
 		parser.print_help()
+		exit(1)
+
+	if window_size < 0:
+		print ("ERROR: window size must be greater or equal to 0")
 		exit(1)
 
 	return args
