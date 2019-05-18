@@ -1,16 +1,45 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
+import json
+from datetime import datetime, timedelta
 
+#Reads each line of the file as a json line into a dictionary list
 def read_json(filename):
-	pass
+	try:
+		with open(filename) as json_file:
+			data = [json.loads(line) for line in json_file]
+		return data
+	except:
+		print ("ERROR: specified window size is not an integer number")
+		parser.print_help()
+		exit(1)
 
-def moving_average():
-	return 1
 
-def calculate_averages():
-	pass
+#Calculate the average of the duration of items with timestamp from time-window (in minutes) to time
+def moving_average(data, window, time):
+	#Get the duration of all lines that the timestamp is after the window start and until the last second of current evaluation time minute
+	list = [i['duration'] for i in data if i['timestamp'] > time - timedelta(minutes=window) and i['timestamp'] <= time ]
+	if not list:
+		return 0
+	return sum(list)/len(list)
 
+def calculate_averages(data, window):
+	#Convert the timestamp field to datetime
+	for i in range(len(data)):
+		line_date = datetime.strptime(data[i]['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+		data[i]['timestamp'] = line_date
+
+	dates = [i['timestamp'] for i in data]
+	min_date =  min(dates)
+	max_date =  max(dates) + timedelta(minutes=1) #Add 1 minute otherwise the last minute is ignored
+
+	#Loop through the timespan and for each minute and calculate the averages
+	current_date = min_date.replace(second=0, microsecond=0)
+	while current_date <= max_date:
+		avg = moving_average(data, window, current_date)
+		print({"date": current_date.strftime('%Y-%m-%d %H:%M:%S'), "average_delivery_time":avg})
+		current_date += timedelta(minutes=1)
 
 
 #Read arguments
@@ -25,5 +54,17 @@ args = parser.parse_args()
 #Check for missing arguments
 if args.filename is None or args.window_size is None:
 	parser.print_help()
+	exit(1)
 
+#Check if window size is an integer
+try:
+	window_size = int(args.window_size)
+except:
+	print ("ERROR: specified window size is not an integer number")
+	parser.print_help()
+	exit(1)
+
+
+input_dict = read_json(args.filename)
+calculate_averages(input_dict, window_size)
 
